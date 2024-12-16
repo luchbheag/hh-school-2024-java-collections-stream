@@ -1,14 +1,9 @@
 package tasks;
 
 import common.Person;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+
+import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -23,72 +18,50 @@ public class Task9 {
 
   private long count;
 
-  // Костыль, эластик всегда выдает в топе "фальшивую персону".
-  // Конвертируем начиная со второй
+  // Комментарий: пропускаем в stream первый элемент, у всех остальных получаем имя и собираем в список
   public List<String> getNames(List<Person> persons) {
-    if (persons.size() == 0) {
-      return Collections.emptyList();
-    }
-    persons.remove(0);
-    return persons.stream().map(Person::firstName).collect(Collectors.toList());
+    return persons.stream()
+            .skip(1)
+            .map(Person::firstName).collect(Collectors.toList());
   }
 
-  // Зачем-то нужны различные имена этих же персон (без учета фальшивой разумеется)
+  // Комментарий: здесь лучше использовать конструктор set'а, чем запускать stream,
+  // так как промежуточных преобразований не делается
   public Set<String> getDifferentNames(List<Person> persons) {
-    return getNames(persons).stream().distinct().collect(Collectors.toSet());
+    return new HashSet<>(getNames(persons));
   }
 
-  // Тут фронтовая логика, делаем за них работу - склеиваем ФИО
+  // Комментарий: создаем stream из трех элементов, оставляем ненулевые, соединяем
   public String convertPersonToString(Person person) {
-    String result = "";
-    if (person.secondName() != null) {
-      result += person.secondName();
-    }
-
-    if (person.firstName() != null) {
-      result += " " + person.firstName();
-    }
-
-    if (person.secondName() != null) {
-      result += " " + person.secondName();
-    }
-    return result;
+    return Stream.of(person.firstName(), person.middleName(), person.secondName())
+            .filter(Objects::nonNull)
+            .collect(Collectors.joining(" "));
   }
 
   // словарь id персоны -> ее имя
+  // Комментарий: собираем из коллекции Map, используя convertPersonToString из этого же класса
   public Map<Integer, String> getPersonNames(Collection<Person> persons) {
-    Map<Integer, String> map = new HashMap<>(1);
-    for (Person person : persons) {
-      if (!map.containsKey(person.id())) {
-        map.put(person.id(), convertPersonToString(person));
-      }
-    }
-    return map;
+    return persons.stream()
+            .collect(Collectors.toMap(Person::id, this::convertPersonToString));
   }
 
-  // есть ли совпадающие в двух коллекциях персоны?
+  // Комментарий: для каждого из элементов первой коллекции вызывается contains() на второй коллекции
+  // до первого совпадения (или до конца, если совпадений не было)
   public boolean hasSamePersons(Collection<Person> persons1, Collection<Person> persons2) {
-    boolean has = false;
-    for (Person person1 : persons1) {
-      for (Person person2 : persons2) {
-        if (person1.equals(person2)) {
-          has = true;
-        }
-      }
-    }
-    return has;
+    return persons1.stream().anyMatch(persons2::contains);
   }
 
-  // Посчитать число четных чисел
+  // Комментарий: оставляем только четные числа, считаем количество
   public long countEven(Stream<Integer> numbers) {
-    count = 0;
-    numbers.filter(num -> num % 2 == 0).forEach(num -> count++);
-    return count;
+    return numbers.filter(num -> num % 2 == 0).count();
   }
 
-  // Загадка - объясните почему assert тут всегда верен
-  // Пояснение в чем соль - мы перетасовали числа, обернули в HashSet, а toString() у него вернул их в сортированном порядке
-  void listVsSet() {
+  // Комментарий: HashSet упорядочивает элементы внутри себя, но этот порядок зависит от хешкодов элементов.
+  // Это связано с тем, что HashSet является "надстройкой" над HashMap, которая представляет собой массив Entry,
+  // Порядок хранения которых зависит от хешкода.
+  // Для достаточно простых объектов (например, целых чисел, как в примере), порядок объектов, упорядоченных по хешкодам, будет совпадать
+  // с так называемым естественным порядком объектов
+    void listVsSet() {
     List<Integer> integers = IntStream.rangeClosed(1, 10000).boxed().collect(Collectors.toList());
     List<Integer> snapshot = new ArrayList<>(integers);
     Collections.shuffle(integers);
