@@ -23,7 +23,7 @@ public class Task2 {
                                                      Collection<Person> persons2,
                                                      int limit) {
     return Stream.concat(persons1.stream(), persons2.stream())
-            .sorted((p1, p2) -> p1.createdAt().compareTo(p2.createdAt()))
+            .sorted(Comparator.comparing(Person::createdAt))
             .limit(limit)
             .collect(Collectors.toList());
   }

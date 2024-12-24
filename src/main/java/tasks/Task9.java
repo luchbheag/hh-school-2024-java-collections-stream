@@ -19,6 +19,7 @@ public class Task9 {
   private long count;
 
   // Комментарий: пропускаем в stream первый элемент, у всех остальных получаем имя и собираем в список
+  // Изначальный код плох тем, что изменяет исходный список
   public List<String> getNames(List<Person> persons) {
     return persons.stream()
             .skip(1)
@@ -40,27 +41,35 @@ public class Task9 {
 
   // словарь id персоны -> ее имя
   // Комментарий: собираем из коллекции Map, используя convertPersonToString из этого же класса
+  // Исправила: добавила mergeFunction
   public Map<Integer, String> getPersonNames(Collection<Person> persons) {
     return persons.stream()
-            .collect(Collectors.toMap(Person::id, this::convertPersonToString));
+            .collect(Collectors.toMap(Person::id, this::convertPersonToString, (prev, cur) -> prev));
   }
 
-  // Комментарий: для каждого из элементов первой коллекции вызывается contains() на второй коллекции
-  // до первого совпадения (или до конца, если совпадений не было)
+  // Скорость не изменилась: в худшем случае O(N * M), где N - длина первой коллекиции, M - второй
+  // (например, обе коллекции List)
+  // Исправила: добавила преобразование второй коллекции в Set
+  // Тогда скорость O(M) + O(N) = O(N + M)
   public boolean hasSamePersons(Collection<Person> persons1, Collection<Person> persons2) {
-    return persons1.stream().anyMatch(persons2::contains);
+    Set<Person> setOfPersons2 = new HashSet<>(persons2);
+    return persons1.stream().anyMatch(setOfPersons2::contains);
   }
 
   // Комментарий: оставляем только четные числа, считаем количество
+  // Изначально использовалась глобальная переменная.
+  // Кроме того, исправленный код более понятен, так как count() предназначен как раз для таких случаев.
   public long countEven(Stream<Integer> numbers) {
     return numbers.filter(num -> num % 2 == 0).count();
   }
 
-  // Комментарий: HashSet упорядочивает элементы внутри себя, но этот порядок зависит от хешкодов элементов.
-  // Это связано с тем, что HashSet является "надстройкой" над HashMap, которая представляет собой массив Entry,
-  // Порядок хранения которых зависит от хешкода.
-  // Для достаточно простых объектов (например, целых чисел, как в примере), порядок объектов, упорядоченных по хешкодам, будет совпадать
-  // с так называемым естественным порядком объектов
+  // Комментарий 2: Поняла, где ошиблась. У целых чисел хешкод равен самому значению числа.
+  // Когда числа кладутся в HashSet (HashMap), они кладутся по хешкоду % количество элементов.
+  // Так как в Set, в который кладется n элементов сразу, выделяется памяти заведомо с запасом,
+  // хешкод (= значение числа) % размер будет класть элементы в ячейки массива в порядке возрастания.
+  // Для примера "1, 2, 16, 33" это не работает, потому что последние элементы будут больше начальной capacity
+  // (по умолчанию она равна 16) и HashSet распределит элементы по-другому.
+  // Для примера, например, "1, 2, 3, 15" порядок вывода на экран сохраняется по возрастанию.
     void listVsSet() {
     List<Integer> integers = IntStream.rangeClosed(1, 10000).boxed().collect(Collectors.toList());
     List<Integer> snapshot = new ArrayList<>(integers);

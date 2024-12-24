@@ -22,7 +22,11 @@ public class Task6 {
 
     return persons.stream()
             .flatMap(person -> personAreaIds.get(person.id()).stream()
-                    .map(areaId -> person.firstName() + " - " + areasMap.get(areaId).getName()))
+            .map(areaId -> createStringOfPersonAndAreas(person, areasMap.get(areaId))))
             .collect(Collectors.toSet());
+  }
+
+  private static String createStringOfPersonAndAreas(Person person, Area area) {
+    return person.firstName() + " - " + area.getName();
   }
 }

@@ -16,7 +16,8 @@ public class Task3 {
   public static List<Person> sort(Collection<Person> persons) {
     return persons.stream()
             .sorted(Comparator.comparing(Person::secondName)
-            .thenComparing(Person::firstName).thenComparing(Person::createdAt))
+            .thenComparing(Person::firstName)
+            .thenComparing(Person::createdAt))
             .collect(Collectors.toList());
   }
 }
